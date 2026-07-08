@@ -1,19 +1,24 @@
 import { router } from "expo-router";
 import { ROUTES } from "../config/routes";
 
-export function navigateTo(
-  step?: keyof typeof ROUTES
-) {
+/**
+ * All valid navigation keys.
+ * Example:
+ * "login"
+ * "signup"
+ * "face-registration"
+ * "face-liveness"
+ * ...
+ */
+export type AppRoute = keyof typeof ROUTES;
+
+export function navigateTo(step?: AppRoute) {
   if (!step) return;
 
   const route = ROUTES[step];
 
   if (!route) {
-    throw new Error(`Unknown route: ${step}`);
-  }
-
-  if (typeof route === "string") {
-    router.push(route as never);
+    console.warn(`Unknown route: ${step}`);
     return;
   }
 

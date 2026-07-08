@@ -3,13 +3,15 @@ import { Platform } from "react-native";
 
 const ACCESS_TOKEN = "access_token";
 const REFRESH_TOKEN = "refresh_token";
+const TOTP_TOKEN = "totp_token";
 const AUTH_USER = "auth_user";
 
-// expo-secure-store has no web implementation (it wraps the native keychain),
-// so on web we fall back to localStorage instead.
 const isWeb = Platform.OS === "web";
 
-async function setItem(key: string, value: string) {
+async function setItem(
+  key: string,
+  value: string
+) {
   if (isWeb) {
     localStorage.setItem(key, value);
     return;
@@ -35,6 +37,10 @@ async function deleteItem(key: string) {
   await SecureStore.deleteItemAsync(key);
 }
 
+/* ===========================
+   ACCESS & REFRESH TOKENS
+=========================== */
+
 export async function saveTokens(
   accessToken: string,
   refreshToken: string
@@ -56,15 +62,57 @@ export async function clearTokens() {
   await deleteItem(REFRESH_TOKEN);
 }
 
-export async function saveUser(user: unknown) {
-  await setItem(AUTH_USER, JSON.stringify(user));
+/* ===========================
+   TOTP TOKEN
+=========================== */
+
+export async function saveTotpToken(
+  token: string
+) {
+  await setItem(TOTP_TOKEN, token);
+}
+
+export async function getTotpToken() {
+  return getItem(TOTP_TOKEN);
+}
+
+export async function clearTotpToken() {
+  await deleteItem(TOTP_TOKEN);
+}
+
+/* ===========================
+   USER
+=========================== */
+
+export async function saveUser(
+  user: unknown
+) {
+  await setItem(
+    AUTH_USER,
+    JSON.stringify(user)
+  );
 }
 
 export async function getUser<T = unknown>(): Promise<T | null> {
   const raw = await getItem(AUTH_USER);
-  return raw ? (JSON.parse(raw) as T) : null;
+
+  if (!raw) {
+    return null;
+  }
+
+  return JSON.parse(raw) as T;
 }
 
 export async function clearUser() {
   await deleteItem(AUTH_USER);
+}
+
+/* ===========================
+   CLEAR EVERYTHING
+=========================== */
+
+export async function clearAuthStorage() {
+  await clearTokens();
+  await clearTotpToken();
+  await clearUser();
 }

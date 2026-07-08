@@ -26,23 +26,26 @@ export default function FaceMask() {
 
 const styles = StyleSheet.create({
   container: {
-    ...StyleSheet.absoluteFill,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
 
   top: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.65)",
+    backgroundColor: "rgba(0,0,0,0.72)",
   },
 
   middle: {
     height: OVAL_HEIGHT,
     flexDirection: "row",
-    alignItems: "center",
   },
 
   side: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.65)",
+    backgroundColor: "rgba(0,0,0,0.72)",
   },
 
   cutout: {
@@ -54,6 +57,6 @@ const styles = StyleSheet.create({
 
   bottom: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.65)",
+    backgroundColor: "rgba(0,0,0,0.72)",
   },
 });

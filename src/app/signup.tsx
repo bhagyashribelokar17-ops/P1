@@ -1,13 +1,31 @@
-import AuthLayout from "../components/AuthLayout";
+import { SafeAreaView, ScrollView, StyleSheet } from "react-native";
+
 import DynamicForm from "../components/DynamicForm";
 
-export default function SignupScreen() {
+export default function Signup() {
   return (
-    <AuthLayout
-      title="Create Account"
-      subtitle="Create your account to access secure biometric authentication."
-    >
-      <DynamicForm formKey="signup" />
-    </AuthLayout>
+    <SafeAreaView style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <DynamicForm formKey="signup" />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#EEF4FF", // Light blue background
+  },
+
+  content: {
+    flexGrow: 1,
+    justifyContent: "center",
+    paddingHorizontal: 24,
+    paddingVertical: 32,
+  },
+});

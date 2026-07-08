@@ -34,7 +34,21 @@ export const SIGNUP_FORM = [
   {
     name: "degree",
     label: "Degree",
-    placeholder: "Enter degree",
+    placeholder: "Select Degree",
+    type: "select",
+    options: [
+      "B.E",
+      "B.Tech",
+      "B.Sc",
+      "BCA",
+      "BBA",
+      "M.E",
+      "M.Tech",
+      "M.Sc",
+      "MCA",
+      "MBA",
+      "Ph.D",
+    ],
   },
   {
     name: "email",

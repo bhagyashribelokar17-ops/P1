@@ -7,18 +7,28 @@ export async function capturePhoto(
     throw new Error("Camera is not ready.");
   }
 
-  const photo = await camera.takePictureAsync({
-    quality: 0.8,
-    base64: true,
-    skipProcessing: true,
-  });
+  try {
+    const photo = await camera.takePictureAsync({
+      quality: 1,
+      base64: true,
+      skipProcessing: true,
+    });
 
-  if (!photo.base64) {
-    throw new Error("Failed to capture image.");
+    if (!photo) {
+      throw new Error("Unable to capture photo.");
+    }
+
+    if (!photo.base64) {
+      throw new Error("Failed to generate Base64 image.");
+    }
+
+    return {
+      uri: photo.uri,
+      base64: photo.base64,
+      dataUri: `data:image/jpeg;base64,${photo.base64}`,
+    };
+  } catch (error) {
+    console.error("Capture Error:", error);
+    throw error;
   }
-
-  return {
-    uri: photo.uri,
-    base64: photo.base64,
-  };
 }

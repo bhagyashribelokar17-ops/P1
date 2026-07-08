@@ -5,23 +5,22 @@ export const ENDPOINTS = {
   },
 
   FACE: {
-    REGISTER: "/face/register",
-    LIVENESS: "/face/liveness",
-    VERIFY: "/face/verify",
+    REGISTER: "/auth/register-face/",
+    VERIFY: "/auth/verify-face/",
   },
 
   TOTP: {
-    SETUP: "/totp/setup",
-    VERIFY: "/totp/verify",
+    SETUP: "/auth/totp-setup/",
+    VERIFY: "/auth/totp-login-verify/",
   },
 
   EMAIL: {
-    VERIFY: "/email/verify",
+    VERIFY: "/email/verify/",
   },
 
   PROFILE: {
     CREATE: "/profile",
     UPDATE: "/profile",
-    DASHBOARD: "/profile", // or "/dashboard" depending on your backend
+    DASHBOARD: "/profile",
   },
 } as const;

@@ -1,8 +1,10 @@
-import { CameraView } from "expo-camera";
+import {
+  CameraView,
+  useCameraPermissions,
+} from "expo-camera";
 import { useLocalSearchParams } from "expo-router";
 import { useRef, useState } from "react";
 import {
-  Alert,
   StyleSheet,
   Text,
   View,
@@ -12,18 +14,27 @@ import AppButton from "../../components/AppButton";
 import CaptureCountdown from "../../components/CaptureCountdown";
 import FaceScanner from "../../components/FaceScanner";
 import FaceTopBar from "../../components/FaceTopBar";
+import LivenessFailure from "../../components/LivenessFailure";
+import LivenessSuccess from "../../components/LivenessSuccess";
 import PrivacyChip from "../../components/PrivacyChip";
 
 import { FACE_CONFIG } from "../../config/faceConfig";
 import { executeAction } from "../../services/actionExecutor";
 import { capturePhoto } from "../../services/cameraService";
-import { verifyLiveness } from "../../services/livenessService";
-import { navigateTo } from "../../services/navigationService";
+import {
+  navigateTo,
+  type AppRoute,
+} from "../../services/navigationService";
 
 type FaceMode =
   | "registration"
   | "verification"
   | "liveness";
+
+type ScanState =
+  | "scanning"
+  | "success"
+  | "failure";
 
 export default function FaceScreen() {
   const { mode } =
@@ -34,6 +45,9 @@ export default function FaceScreen() {
   const currentMode =
     (mode ?? "liveness") as FaceMode;
 
+  const [permission, requestPermission] =
+    useCameraPermissions();
+
   const config =
     FACE_CONFIG[currentMode];
 
@@ -43,129 +57,152 @@ export default function FaceScreen() {
   const [loading, setLoading] =
     useState(false);
 
-  const [
-    startCountdown,
-    setStartCountdown,
-  ] = useState(false);
+  const [countdown, setCountdown] =
+    useState(false);
 
   const [status, setStatus] =
     useState(
       "Align your face inside the frame"
     );
 
+  const [scanState, setScanState] =
+    useState<ScanState>("scanning");
+
+  const [nextRoute, setNextRoute] =
+    useState<AppRoute>();
+
+  if (!permission) {
+    return <View style={{ flex: 1 }} />;
+  }
+
+  if (!permission.granted) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: "#081224",
+          justifyContent: "center",
+          alignItems: "center",
+          padding: 24,
+        }}
+      >
+        <Text
+          style={{
+            color: "#fff",
+            fontSize: 18,
+            marginBottom: 20,
+          }}
+        >
+          Camera permission required
+        </Text>
+
+        <AppButton
+          title="Grant Permission"
+          onPress={requestPermission}
+        />
+      </View>
+    );
+  }
+
   const beginCapture = () => {
     if (loading) return;
 
     setStatus("Hold still...");
-    setStartCountdown(true);
+    setCountdown(true);
   };
 
   const captureFace = async () => {
     try {
       setLoading(true);
-      setStartCountdown(false);
+      setCountdown(false);
+
       setStatus("Capturing...");
 
       const image =
-        await capturePhoto(
-          cameraRef.current
-        );
-
-      if (!image?.base64) {
-        Alert.alert(
-          "Error",
-          "Unable to capture image."
-        );
-        return;
-      }
+        await capturePhoto(cameraRef.current);
 
       setStatus("Analyzing...");
 
-      let response;
-      let next;
+      let result: any = null;
 
       switch (currentMode) {
         case "registration":
-          ({
-            response,
-            next,
-          } = await executeAction(
-            "faceRegistration",
-            {
-              image: image.base64,
-            }
-          ));
+          result =
+            await executeAction(
+              "faceRegistration",
+              {
+                image: image.base64,
+              }
+            );
           break;
 
         case "verification":
-          ({
-            response,
-            next,
-          } = await executeAction(
-            "faceVerification",
-            {
-              image: image.base64,
-            }
-          ));
+        case "liveness":
+          result =
+            await executeAction(
+              "faceVerification",
+              {
+                image: image.base64,
+              }
+            );
           break;
-
-        default:
-          ({
-            response,
-            next,
-          } = await verifyLiveness(
-            image.base64
-          ));
       }
 
-      console.log(
-        "Face API Response:",
-        response
-      );
-            if (
-        response?.success === false ||
-        response?.is_live === false
+      if (!result) {
+        throw new Error(
+          "Face verification failed."
+        );
+      }
+
+      const {
+        response,
+        next,
+      } = result;
+
+      console.log(response);
+
+      if (
+        response?.success === false
       ) {
-        setStatus(
-          "Verification Failed"
-        );
-
-        Alert.alert(
-          "Authentication Failed",
-          response?.message ??
-            "Please try again."
-        );
-
+        setScanState("failure");
         return;
       }
 
-      setStatus(
-        "Verification Successful"
-      );
-
-      setTimeout(() => {
-        if (next) {
-          navigateTo(next);
-        }
-      }, 1000);
-    } catch (error: any) {
+      setNextRoute(next as AppRoute);
+      setScanState("success");
+    } catch (error) {
       console.log(error);
-
-      setStatus(
-        "Verification Failed"
-      );
-
-      Alert.alert(
-        "Error",
-        error?.response?.data?.message ??
-          error?.message ??
-          "Something went wrong."
-      );
+      setScanState("failure");
     } finally {
       setLoading(false);
-      setStartCountdown(false);
+      setCountdown(false);
     }
   };
+
+  if (scanState === "success") {
+    return (
+      <LivenessSuccess
+        onContinue={() => {
+          if (nextRoute) {
+            navigateTo(nextRoute);
+          }
+        }}
+      />
+    );
+  }
+
+  if (scanState === "failure") {
+    return (
+      <LivenessFailure
+        onRetry={() => {
+          setScanState("scanning");
+          setStatus(
+            "Align your face inside the frame"
+          );
+        }}
+      />
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -190,64 +227,49 @@ export default function FaceScreen() {
       <View style={styles.cameraCard}>
         <FaceScanner ref={cameraRef} />
 
-        <View style={styles.statusContainer}>
+        <View
+          style={styles.instructionContainer}
+        >
+          <Text
+            style={styles.instructionTitle}
+          >
+            Position your face
+          </Text>
+
+          <Text
+            style={styles.instructionText}
+          >
+            Place your face inside the oval and
+            look directly at the camera.
+          </Text>
+        </View>
+
+        <CaptureCountdown
+          start={countdown}
+          onComplete={captureFace}
+        />
+
+        <View
+          style={styles.statusContainer}
+        >
           <View
             style={[
               styles.statusDot,
               {
                 backgroundColor:
-                  loading || startCountdown
+                  loading || countdown
                     ? "#22C55E"
                     : "#F59E0B",
               },
             ]}
           />
 
-          <Text style={styles.statusText}>
+          <Text style={styles.status}>
             {loading
-              ? "Verifying..."
-              : startCountdown
+              ? "Verifying your identity..."
+              : countdown
               ? "Capturing..."
               : status}
-          </Text>
-        </View>
-
-        <CaptureCountdown
-          start={startCountdown}
-          onComplete={captureFace}
-        />
-      </View>
-
-      <View style={styles.instructionCard}>
-        <Text style={styles.instructionTitle}>
-          Instructions
-        </Text>
-
-        <View style={styles.instructionRow}>
-          <Text style={styles.bullet}>✓</Text>
-          <Text style={styles.instruction}>
-            Remove sunglasses or hats
-          </Text>
-        </View>
-
-        <View style={styles.instructionRow}>
-          <Text style={styles.bullet}>✓</Text>
-          <Text style={styles.instruction}>
-            Ensure good lighting
-          </Text>
-        </View>
-
-        <View style={styles.instructionRow}>
-          <Text style={styles.bullet}>✓</Text>
-          <Text style={styles.instruction}>
-            Keep your head steady
-          </Text>
-        </View>
-
-        <View style={styles.instructionRow}>
-          <Text style={styles.bullet}>✓</Text>
-          <Text style={styles.instruction}>
-            Look directly at the camera
           </Text>
         </View>
       </View>
@@ -256,7 +278,7 @@ export default function FaceScreen() {
         title={
           loading
             ? "Verifying..."
-            : startCountdown
+            : countdown
             ? "Capturing..."
             : "Start Verification"
         }
@@ -266,7 +288,7 @@ export default function FaceScreen() {
     </View>
   );
 }
-  const styles = StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#081224",
@@ -312,16 +334,46 @@ export default function FaceScreen() {
     position: "relative",
   },
 
+  instructionContainer: {
+    position: "absolute",
+    top: 24,
+    left: 20,
+    right: 20,
+    alignItems: "center",
+    zIndex: 100,
+  },
+
+  instructionTitle: {
+    color: "#FFFFFF",
+    fontSize: 22,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+
+  instructionText: {
+    marginTop: 8,
+    color: "#CBD5E1",
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: "center",
+    paddingHorizontal: 12,
+  },
+
   statusContainer: {
     position: "absolute",
-    bottom: 20,
-    alignSelf: "center",
+    bottom: 24,
+    left: 20,
+    right: 20,
+
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.75)",
+    justifyContent: "center",
+
+    backgroundColor: "rgba(0,0,0,0.65)",
     paddingHorizontal: 18,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderRadius: 30,
+
     zIndex: 100,
   },
 
@@ -332,43 +384,10 @@ export default function FaceScreen() {
     marginRight: 10,
   },
 
-  statusText: {
+  status: {
     color: "#FFFFFF",
     fontSize: 15,
     fontWeight: "600",
-  },
-
-  instructionCard: {
-    backgroundColor: "#111827",
-    borderRadius: 18,
-    padding: 20,
-    marginBottom: 20,
-  },
-
-  instructionTitle: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 14,
-  },
-
-  instructionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-
-  bullet: {
-    color: "#22C55E",
-    fontSize: 18,
-    fontWeight: "700",
-    marginRight: 10,
-  },
-
-  instruction: {
-    flex: 1,
-    color: "#CBD5E1",
-    fontSize: 15,
-    lineHeight: 22,
+    textAlign: "center",
   },
 });

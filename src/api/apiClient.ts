@@ -15,7 +15,16 @@ apiClient.interceptors.request.use(
     try {
       const token = await getAccessToken();
 
-      if (token) {
+      const publicRoutes = [
+        "/auth/login/",
+        "/auth/register/",
+      ];
+
+      const isPublicRoute = publicRoutes.some((route) =>
+        config.url?.includes(route)
+      );
+
+      if (token && !isPublicRoute) {
         config.headers = config.headers ?? {};
         config.headers.Authorization = `Bearer ${token}`;
       }

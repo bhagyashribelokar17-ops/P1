@@ -27,22 +27,19 @@ export const AUTH_ACTIONS: Record<string, AuthAction> = {
     next: "login",
   },
 
+  // POST /api/auth/register-face/
   faceRegistration: {
     endpoint: ENDPOINTS.FACE.REGISTER,
     method: "POST",
-    next: "totp-setup",
+    next: "face-liveness",
   },
 
-  faceLiveness: {
-    endpoint: ENDPOINTS.FACE.LIVENESS,
-    method: "POST",
-    next: "face-verification",
-  },
-
+  // Backend has NO separate liveness API.
+  // Liveness screen captures the image and uses verify-face.
   faceVerification: {
     endpoint: ENDPOINTS.FACE.VERIFY,
     method: "POST",
-    next: "totp-verify",
+    next: "totp-setup",
   },
 
   totpSetup: {
@@ -54,7 +51,7 @@ export const AUTH_ACTIONS: Record<string, AuthAction> = {
   totpVerify: {
     endpoint: ENDPOINTS.TOTP.VERIFY,
     method: "POST",
-    next: "email-verification",
+    next: "profile",
   },
 
   emailVerify: {

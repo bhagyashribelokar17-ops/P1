@@ -1,12 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import {
-    KeyboardTypeOptions,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  KeyboardTypeOptions,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 
 interface Props {
@@ -83,7 +83,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     color: "#111827",
-    marginBottom: 6,
+    marginBottom: 8,
+    marginLeft: 2,
   },
 
   inputWrapper: {
@@ -92,24 +93,30 @@ const styles = StyleSheet.create({
 
   input: {
     width: "100%",
-    minHeight: 52,
+    height: 56,                  // fixed height
     borderWidth: 1,
     borderColor: "#D1D5DB",
     borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+
     backgroundColor: "#FFFFFF",
+
+    paddingHorizontal: 18,       // more left/right spacing
+    paddingVertical: 0,          // center text vertically
+
     fontSize: 16,
     color: "#111827",
+
+    textAlignVertical: "center", // Android
   },
 
   inputWithIcon: {
-    paddingRight: 44,
+    paddingRight: 50,
   },
 
   icon: {
     position: "absolute",
-    right: 14,
+    right: 16,
+    alignSelf: "center",
   },
 
   errorBorder: {
@@ -117,7 +124,8 @@ const styles = StyleSheet.create({
   },
 
   error: {
-    marginTop: 5,
+    marginTop: 6,
+    marginLeft: 2,
     color: "#EF4444",
     fontSize: 12,
   },
